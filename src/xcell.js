@@ -25,22 +25,16 @@ export default class XCell {
         clearNode(this.rootElement);
     }
 
-    _render() {
+    setData(data) {
+        this.data = [...data];
+        this._renderRows();
+    }
+
+    _renderRows() {
         const countRows = this.data.length;
         const countColumns = this.columns.length;
-        
-        const headerColumnsFragment = document.createDocumentFragment();
-        if (this.rowHeaders.length > 0) {
-            headerColumnsFragment.appendChild(el('th', {}));
-        }
-
-        this.columns.forEach((col) => {
-            headerColumnsFragment.appendChild(
-                el('th', {}, col.title),
-            );
-        });
-        
         const rowsFragment = document.createDocumentFragment();
+
         for (let irow = 0; irow < countRows; irow++ ) {
             const columnsFragment = document.createDocumentFragment();
 
@@ -74,6 +68,29 @@ export default class XCell {
             );
         }
 
+        const tbody = this.rootElement.querySelector('table tbody');
+        if (tbody) {
+            clearNode(tbody);
+            tbody.appendChild(rowsFragment);
+        }
+        
+    }
+
+    _render() {
+        const countRows = this.data.length;
+        const countColumns = this.columns.length;
+        
+        const headerColumnsFragment = document.createDocumentFragment();
+        if (this.rowHeaders.length > 0) {
+            headerColumnsFragment.appendChild(el('th', {}));
+        }
+
+        this.columns.forEach((col) => {
+            headerColumnsFragment.appendChild(
+                el('th', {}, col.title),
+            );
+        });
+
         const colGroupsFragment = document.createDocumentFragment();
         colGroupsFragment.appendChild(el('colgroup', { width: '150' }));
 
@@ -92,13 +109,13 @@ export default class XCell {
             el('thead', {}, [
                 el('tr', {}, [headerColumnsFragment])
             ]),
-            el('tbody', {}, [
-                rowsFragment,
-            ])
+            el('tbody', {})
         ]);
 
         clearNode(this.rootElement);
         this.rootElement.appendChild(tableEl);
+
+        this._renderRows();
 
         this._markActiveCells();
         this._addEventListeners();
@@ -192,7 +209,7 @@ export default class XCell {
                 let cellValue = this.data[cell.dataset.row][cell.dataset.col] ?? '';
                 const span = cell.querySelector('span');
                 span.innerText = '';
-                const inputEl = el('input', { type: this.columns[cell.dataset.col]?.type ?? 'text', value: cellValue });
+                const inputEl = el('input', { type: this.columns[cell.dataset.col]?.type ?? 'text', value: cellValue,  thousandsSeparator: ' '});
                 span.appendChild(inputEl);
                 inputEl.focus();
                 inputEl.select();
@@ -210,10 +227,14 @@ export default class XCell {
             
             try {
                 const newValue = input.value;
-                this.data[cell.dataset.row][cell.dataset.col] = newValue;
+
+                if (newValue != this.data[cell.dataset.row][cell.dataset.col]) {
+                    this.data[cell.dataset.row][cell.dataset.col] = newValue;
+                    this._emitEvent();
+                }
+
                 cellSpan.removeChild(input);
-                cellSpan.innerText = newValue;
-                this._emitEvent();
+                cellSpan.innerText = this.data[cell.dataset.row][cell.dataset.col];
             }
             catch (err) {
                 console.log(err);
@@ -347,6 +368,11 @@ export default class XCell {
 
         const [ firstActiveCoord ] = this._coords.getCoords();
         const cell = this._getCellByCoord(firstActiveCoord[0], firstActiveCoord[1]);
+
+        if (cell.querySelector('input')) {
+            return;
+        }
+
         if (cell && cell.querySelector('input')) {
             cell.querySelector('input').blur();
             this.rootElement.querySelector('.x-table').focus();
@@ -472,26 +498,53 @@ export default class XCell {
     _pasteFromClipboard(clipText) {
         const hasEditedCell = this.rootElement.querySelectorAll('td.x-cell input').length > 0;
 
-        const res = clipText.split("\n").map((row) => {
-            return row.split("\t");
-        });
+        let totalCountItems = 0;
+        const res = clipText.split("\n")
+            .map((row) => {
+                const subRes = row.split("\t");
+                totalCountItems += subRes.length;
 
-        const sortedCoords = this._coords
-            .getCoords()
-            .sort((a, b) => parseInt(`${a[0]}${a[1]}`) - parseInt(`${b[0]}${b[1]}`));
+                return subRes;
+            });
 
-        const [firstRow, firstColumn] = sortedCoords.length > 0 ? sortedCoords[0] : [0, 0];
+        if (totalCountItems > 1) {
+            const sortedCoords = this._coords
+                .getCoords()
+                .sort((a, b) => parseInt(`${a[0]}${a[1]}`) - parseInt(`${b[0]}${b[1]}`));
 
-        res.forEach((rowClip, rowIndex) => {
-            rowClip.forEach((colClip, colIndex) => {
-                const cell = this._getCellByCoord(firstRow + rowIndex, firstColumn + colIndex);
+            const [firstRow, firstColumn] = sortedCoords.length > 0 ? sortedCoords[0] : [0, 0];
+
+            let isChanged = false;
+            res.forEach((rowClip, rowIndex) => {
+                rowClip.forEach((colClip, colIndex) => {
+                    const cell = this._getCellByCoord(firstRow + rowIndex, firstColumn + colIndex);
+                    if (cell) {
+                        this.data[firstRow + rowIndex][firstColumn + colIndex] = colClip;
+                        cell.querySelector('span').innerText = colClip;
+                        isChanged = true;
+                    }
+                });
+            });
+
+            if (isChanged) {
+                this._emitEvent();
+            }
+        } else if (totalCountItems === 1) {
+            let isChanged = false;
+            const cellVal = res[0][0];
+            this._coords.getCoords().forEach(([row, column]) => {
+                const cell = this._getCellByCoord(row, column);
                 if (cell) {
-                    this.data[firstRow + rowIndex][firstColumn + colIndex] = colClip;
-                    cell.querySelector('span').innerText = colClip;
-                    this._emitEvent();
+                    this.data[row][column] = cellVal;
+                    cell.querySelector('span').innerText = cellVal;
+                    isChanged = true;
                 }
             });
-        });
+
+            if (isChanged) {
+                this._emitEvent();
+            }
+        }
     }
 
     _emitEvent() {
@@ -504,9 +557,7 @@ export default class XCell {
 
             timer = setTimeout(() => {
                 const event = new CustomEvent('changeData', {
-                    detail: {
-                        data: this.data,
-                    }
+                    detail: { data: this.data }
                 });
 
                 this.rootElement.dispatchEvent(event);
