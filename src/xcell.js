@@ -130,15 +130,23 @@ export default class XCell {
     }
 
     _markActiveCells() {
-        setTimeout(() => {
-            this.rootElement.querySelectorAll('td.x-cell.active').forEach((node) => { node.classList.remove('active') });
-            this._coords.getCoords().forEach((coord) => {
-                const cell = this.rootElement.querySelector(`td.x-cell[data-row="${coord[0]}"][data-col="${coord[1]}"]`);
-                if (cell) {
-                    cell.classList.add('active');
-                }
+        let timer;
+        
+        (() => {
+            if (timer) {
+                clearTimeout(timer);
+            }
+
+            timer = setTimeout(() => {
+                this.rootElement.querySelectorAll('td.x-cell.active').forEach((node) => { node.classList.remove('active') });
+                this._coords.getCoords().forEach((coord) => {
+                    const cell = this.rootElement.querySelector(`td.x-cell[data-row="${coord[0]}"][data-col="${coord[1]}"]`);
+                    if (cell) {
+                        cell.classList.add('active');
+                    }
+                });
             });
-        });
+        })();
     }
 
     /**
@@ -184,7 +192,7 @@ export default class XCell {
                 let cellValue = this.data[cell.dataset.row][cell.dataset.col] ?? '';
                 const span = cell.querySelector('span');
                 span.innerText = '';
-                const inputEl = el('input', { type: this.columns[cell.dataset.col].type, value: cellValue });
+                const inputEl = el('input', { type: this.columns[cell.dataset.col]?.type ?? 'text', value: cellValue });
                 span.appendChild(inputEl);
                 inputEl.focus();
                 inputEl.select();
@@ -205,6 +213,7 @@ export default class XCell {
                 this.data[cell.dataset.row][cell.dataset.col] = newValue;
                 cellSpan.removeChild(input);
                 cellSpan.innerText = newValue;
+                this._emitEvent();
             }
             catch (err) {
                 console.log(err);
@@ -479,8 +488,29 @@ export default class XCell {
                 if (cell) {
                     this.data[firstRow + rowIndex][firstColumn + colIndex] = colClip;
                     cell.querySelector('span').innerText = colClip;
+                    this._emitEvent();
                 }
             });
         });
+    }
+
+    _emitEvent() {
+        let timer;
+        
+        (() => {
+            if (timer) {
+                clearTimeout(timer);
+            }
+
+            timer = setTimeout(() => {
+                const event = new CustomEvent('changeData', {
+                    detail: {
+                        data: this.data,
+                    }
+                });
+
+                this.rootElement.dispatchEvent(event);
+            });
+        })();
     }
 }

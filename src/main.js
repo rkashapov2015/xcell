@@ -43,3 +43,7 @@ const xcell = new XCell(
   rowHeaders,
 );
 
+document.querySelector('#app').addEventListener('changeData', (event) => { 
+  console.log(event);
+});
+
