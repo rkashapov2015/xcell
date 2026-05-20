@@ -12,7 +12,7 @@ export default class XCell {
         this.rootElement = element;
         this.data = data;
         this.columns = columns;
-        this.rowHeaders = rowHeaders;
+        this.rowHeaders = rowHeaders ?? [];
         this._coords = new Coord();
 
         this._render();
@@ -92,7 +92,10 @@ export default class XCell {
         });
 
         const colGroupsFragment = document.createDocumentFragment();
-        colGroupsFragment.appendChild(el('colgroup', { width: '150' }));
+
+        if (this.rowHeaders.length) {
+            colGroupsFragment.appendChild(el('colgroup', { width: '150' }));
+        }
 
         const colGroupEl = el('colgroup');
         this.columns.forEach((column, index) => {
@@ -144,26 +147,6 @@ export default class XCell {
         this.rootElement.removeEventListener('keydown', this._onKeydown.bind(this));
         this.rootElement.querySelector('table').removeEventListener('copy', this._onCopy.bind(this));
         this.rootElement.querySelector('table').removeEventListener('paste', this._onPaste.bind(this));
-    }
-
-    _markActiveCells() {
-        let timer;
-        
-        (() => {
-            if (timer) {
-                clearTimeout(timer);
-            }
-
-            timer = setTimeout(() => {
-                this.rootElement.querySelectorAll('td.x-cell.active').forEach((node) => { node.classList.remove('active') });
-                this._coords.getCoords().forEach((coord) => {
-                    const cell = this.rootElement.querySelector(`td.x-cell[data-row="${coord[0]}"][data-col="${coord[1]}"]`);
-                    if (cell) {
-                        cell.classList.add('active');
-                    }
-                });
-            });
-        })();
     }
 
     /**
@@ -545,6 +528,26 @@ export default class XCell {
                 this._emitEvent();
             }
         }
+    }
+
+    _markActiveCells() {
+        let timer;
+        
+        (() => {
+            if (timer) {
+                clearTimeout(timer);
+            }
+
+            timer = setTimeout(() => {
+                this.rootElement.querySelectorAll('td.x-cell.active').forEach((node) => { node.classList.remove('active') });
+                this._coords.getCoords().forEach((coord) => {
+                    const cell = this.rootElement.querySelector(`td.x-cell[data-row="${coord[0]}"][data-col="${coord[1]}"]`);
+                    if (cell) {
+                        cell.classList.add('active');
+                    }
+                });
+            });
+        })();
     }
 
     _emitEvent() {
