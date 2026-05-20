@@ -2,6 +2,18 @@ import {el, clearNode } from './common';
 import Coord from './coord';
 
 export default class XCell {
+    #rootElement;
+
+    #data;
+
+    #columns;
+
+    #rowHeaders;
+
+    #coords;
+
+    #isLeftButtonHolded;
+
     /**
      * @param {Element} element 
      * @param {Array} data 
@@ -9,52 +21,52 @@ export default class XCell {
      * @param {Array<String>} rowHeaders
      */
     constructor (element, data, columns, rowHeaders) {
-        this.rootElement = element;
-        this.data = data;
-        this.columns = columns;
-        this.rowHeaders = rowHeaders ?? [];
-        this._coords = new Coord();
+        this.#rootElement = element;
+        this.#data = data;
+        this.#columns = columns;
+        this.#rowHeaders = rowHeaders ?? [];
+        this.#coords = new Coord();
 
-        this._render();
+        this.#render();
 
-        this.isLeftButtonHolded = false;
+        this.#isLeftButtonHolded = false;
     }
 
     destroy() {
-        this._removeEventListeners();
-        clearNode(this.rootElement);
+        this.removeEventListeners();
+        clearNode(this.#rootElement);
     }
 
     setData(data) {
-        this.data = [...data];
-        this._renderRows();
+        this.#data = [...data];
+        this.#renderRows();
     }
 
-    _renderRows() {
-        const countRows = this.data.length;
-        const countColumns = this.columns.length;
+    #renderRows() {
+        const countRows = this.#data.length;
+        const countColumns = this.#columns.length;
         const rowsFragment = document.createDocumentFragment();
 
-        for (let irow = 0; irow < countRows; irow++ ) {
+        for (let irow = 0; irow < countRows; irow += 1 ) {
             const columnsFragment = document.createDocumentFragment();
 
-            if (this.rowHeaders.length > 0) {
+            if (this.#rowHeaders.length > 0) {
                 let val = irow;
-                if (irow <= this.rowHeaders.length - 1) {
-                    val = this.rowHeaders[irow];
+                if (irow <= this.#rowHeaders.length - 1) {
+                    val = this.#rowHeaders[irow];
                 }
                 columnsFragment.appendChild(el('th', {}, val));
             }
 
-            for (let icol = 0; icol < countColumns; icol++ ) {
+            for (let icol = 0; icol < countColumns; icol += 1 ) {
                 const elTagname = 'td';
                 let cellValue = '';
 
                 if (
-                    irow <= this.data.length - 1
-                    && icol <= this.data[irow].length - 1
+                    irow <= this.#data.length - 1
+                    && icol <= this.#data[irow].length - 1
                 ) {
-                    cellValue = (this.data[irow][icol]).toString();
+                    cellValue = (this.#data[irow][icol]).toString();
                 }
 
                 columnsFragment.appendChild(
@@ -68,7 +80,7 @@ export default class XCell {
             );
         }
 
-        const tbody = this.rootElement.querySelector('table tbody');
+        const tbody = this.#rootElement.querySelector('table tbody');
         if (tbody) {
             clearNode(tbody);
             tbody.appendChild(rowsFragment);
@@ -76,16 +88,13 @@ export default class XCell {
         
     }
 
-    _render() {
-        const countRows = this.data.length;
-        const countColumns = this.columns.length;
-        
+    #render() {
         const headerColumnsFragment = document.createDocumentFragment();
-        if (this.rowHeaders.length > 0) {
+        if (this.#rowHeaders.length > 0) {
             headerColumnsFragment.appendChild(el('th', {}));
         }
 
-        this.columns.forEach((col) => {
+        this.#columns.forEach((col) => {
             headerColumnsFragment.appendChild(
                 el('th', {}, col.title),
             );
@@ -93,12 +102,12 @@ export default class XCell {
 
         const colGroupsFragment = document.createDocumentFragment();
 
-        if (this.rowHeaders.length) {
+        if (this.#rowHeaders.length) {
             colGroupsFragment.appendChild(el('colgroup', { width: '150' }));
         }
 
         const colGroupEl = el('colgroup');
-        this.columns.forEach((column, index) => {
+        this.#columns.forEach((column, index) => {
             if (index === 0) return;
 
             colGroupEl.appendChild(
@@ -115,84 +124,86 @@ export default class XCell {
             el('tbody', {})
         ]);
 
-        clearNode(this.rootElement);
-        this.rootElement.appendChild(tableEl);
+        clearNode(this.#rootElement);
+        this.#rootElement.appendChild(tableEl);
 
-        this._renderRows();
+        this.#renderRows();
 
-        this._markActiveCells();
-        this._addEventListeners();
+        this.#markActiveCells();
+        this.#addEventListeners();
         tableEl.focus();
     }
 
-    _addEventListeners() {
-        this.rootElement.addEventListener('click', this._onClick.bind(this));
-        this.rootElement.addEventListener('dblclick', this._onDoubleClick.bind(this));
-        this.rootElement.addEventListener('mousedown', this._onMouseDown.bind(this));
-        this.rootElement.addEventListener('mouseup', this._onMouseUp.bind(this));
-        this.rootElement.addEventListener('mouseover', this._onMouseOver.bind(this));
-        this.rootElement.addEventListener('blur', this._onBlur.bind(this), true);
-        this.rootElement.addEventListener('keydown', this._onKeydown.bind(this));
-        this.rootElement.querySelector('table').addEventListener('copy', this._onCopy.bind(this));
-        this.rootElement.querySelector('table').addEventListener('paste', this._onPaste.bind(this));
+    #addEventListeners() {
+        this.#rootElement.addEventListener('click', this.#onClick.bind(this));
+        this.#rootElement.addEventListener('dblclick', this.#onDoubleClick.bind(this));
+        this.#rootElement.addEventListener('mousedown', this.#onMouseDown.bind(this));
+        this.#rootElement.addEventListener('mouseup', this.#onMouseUp.bind(this));
+        this.#rootElement.addEventListener('mouseover', this.#onMouseOver.bind(this));
+        this.#rootElement.addEventListener('blur', this.#onBlur.bind(this), true);
+        this.#rootElement.addEventListener('keydown', this.#onKeydown.bind(this));
+        this.#rootElement.querySelector('table').addEventListener('copy', this.#onCopy.bind(this));
+        this.#rootElement.querySelector('table').addEventListener('paste', this.#onPaste.bind(this));
     }
 
-    _removeEventListeners() {
-        this.rootElement.removeEventListener('click', this._onClick.bind(this));
-        this.rootElement.removeEventListener('dblclick', this._onDoubleClick.bind(this));
-        this.rootElement.removeEventListener('mousedown', this._onMouseDown.bind(this));
-        this.rootElement.removeEventListener('mouseup', this._onMouseUp.bind(this));
-        this.rootElement.removeEventListener('mouseover', this._onMouseOver.bind(this));
-        this.rootElement.removeEventListener('blur', this._onBlur.bind(this), true);
-        this.rootElement.removeEventListener('keydown', this._onKeydown.bind(this));
-        this.rootElement.querySelector('table').removeEventListener('copy', this._onCopy.bind(this));
-        this.rootElement.querySelector('table').removeEventListener('paste', this._onPaste.bind(this));
+    #removeEventListeners() {
+        this.#rootElement.removeEventListener('click', this.#onClick.bind(this));
+        this.#rootElement.removeEventListener('dblclick', this.#onDoubleClick.bind(this));
+        this.#rootElement.removeEventListener('mousedown', this.#onMouseDown.bind(this));
+        this.#rootElement.removeEventListener('mouseup', this.#onMouseUp.bind(this));
+        this.#rootElement.removeEventListener('mouseover', this.#onMouseOver.bind(this));
+        this.#rootElement.removeEventListener('blur', this.#onBlur.bind(this), true);
+        this.#rootElement.removeEventListener('keydown', this.#onKeydown.bind(this));
+        this.#rootElement.querySelector('table').removeEventListener('copy', this.#onCopy.bind(this));
+        this.#rootElement.querySelector('table').removeEventListener('paste', this.#onPaste.bind(this));
     }
 
     /**
      * @param {MouseEvent} event 
      */
-    _onClick(event) {
-        const target = event.target;
+    #onClick(event) {
+        const { target } = event;
         const currentCell = target.closest('tr > td.x-cell');
+
         if (currentCell) {
-            const row = parseInt(currentCell.dataset.row), 
-                col = parseInt(currentCell.dataset.col);
+            const row = parseInt(currentCell.dataset.row, 10);
+            const col = parseInt(currentCell.dataset.col, 10);
+
             if (event.shiftKey) {
-                const [ lastRow, lastColumn ] = this._coords.getLastCoord();
-                this._selectOnRange([lastRow, lastColumn], [row, col]);
+                const [ lastRow, lastColumn ] = this.#coords.getLastCoord();
+                this.selectOnRange([lastRow, lastColumn], [row, col]);
             } else if (event.ctrlKey) {
-                this._coords.addCoord([row, col]);
+                this.#coords.addCoord([row, col]);
             } else {
-                this._coords.setCoords([[row, col]]);
+                this.#coords.setCoords([[row, col]]);
             }
 
-            this._markActiveCells();
+            this.#markActiveCells();
         }
     }
 
     /**
      * @param {MouseEvent} event 
      */
-    _onDoubleClick(event) {
-        const target = event.target;
+    #onDoubleClick(event) {
+        const { target } = event;
         const currentCell = target.closest('tr > td.x-cell');
         if (currentCell) {
-            this._editCell(currentCell);
+            this.#editCell(currentCell);
         }
     }
 
     /**
      * @param {Element} cell 
      */
-    _editCell(cell) {
+    #editCell(cell) {
         if (cell) {
-            const cellType = this.columns[cell.dataset.col].type;
+            const cellType = this.#columns[cell.dataset.col].type;
             if (cellType !== 'readonly') {
-                let cellValue = this.data[cell.dataset.row][cell.dataset.col] ?? '';
+                const cellValue = this.#data[cell.dataset.row][cell.dataset.col] ?? '';
                 const span = cell.querySelector('span');
                 span.innerText = '';
-                const inputEl = el('input', { type: this.columns[cell.dataset.col]?.type ?? 'text', value: cellValue,  thousandsSeparator: ' '});
+                const inputEl = el('input', { type: this.#columns[cell.dataset.col]?.type ?? 'text', value: cellValue,  thousandsSeparator: ' '});
                 span.appendChild(inputEl);
                 inputEl.focus();
                 inputEl.select();
@@ -203,7 +214,7 @@ export default class XCell {
     /**
      * @param {Element} cell 
      */
-    _removeEditCell(cell) {
+    #removeEditCell(cell) {
         if (cell) {
             const cellSpan = cell.querySelector('span');
             const input = cell.querySelector('input');
@@ -211,15 +222,16 @@ export default class XCell {
             try {
                 const newValue = input.value;
 
-                if (newValue != this.data[cell.dataset.row][cell.dataset.col]) {
-                    this.data[cell.dataset.row][cell.dataset.col] = newValue;
-                    this._emitEvent();
+                if (newValue !== (this.#data[cell.dataset.row][cell.dataset.col]).toString()) {
+                    this.#data[cell.dataset.row][cell.dataset.col] = newValue;
+                    this.#emitEvent();
                 }
 
                 cellSpan.removeChild(input);
-                cellSpan.innerText = this.data[cell.dataset.row][cell.dataset.col];
+                cellSpan.innerText = this.#data[cell.dataset.row][cell.dataset.col];
             }
             catch (err) {
+                // eslint-disable-next-line no-console
                 console.log(err);
             }
         }
@@ -228,48 +240,43 @@ export default class XCell {
     /**
      * @param {FocusEvent} event 
      */
-    _onBlur(event) {
-        const target = event.target;
+    #onBlur(event) {
+        const { target } = event;
         const currentCell = target.closest('tr > td.x-cell');
-        this._removeEditCell(currentCell);
+        this.#removeEditCell(currentCell);
     }
 
     /**
      * @param {KeyboardEvent} event
      */
-    _onKeydown(event) {
+    #onKeydown(event) {
         let cell;
+        const coord = this.#coords.getFirstCoord();
+
         switch (true) {
             case event.key === 'ArrowUp':
             case event.key === 'ArrowDown':
             case event.key === 'ArrowLeft':
             case event.key === 'ArrowRight':
-                this._onMoving(event);
+                this.#onMoving(event);
             break;
             case event.key === 'Enter':
-                const coord = this._coords.getFirstCoord();
-                cell = this._getCellByCoord(coord[0], coord[1]);
+                cell = this.getCellByCoord(coord[0], coord[1]);
+
                 if (cell.querySelector('span > input')) {
                     cell.querySelector('span > input').blur();
-                    this.rootElement.querySelector('.x-table').focus();
+                    this.#rootElement.querySelector('.x-table').focus();
                 } else {
-                    this._editCell(cell);
+                    this.#editCell(cell);
                 }
             break;
-            // case event.ctrlKey && ['c', 'C', 'с', 'С'].includes(event.key):
-            //     navigator.clipboard.writeText(this._getValuesActiveCoordsForClipboard());
-            // break;
-            // case event.ctrlKey && ['v', 'V', 'м', 'М'].includes(event.key):
-            //     navigator.clipboard
-            //         .readText()
-            //         .then(this._pasteFromClipboard.bind(this));
-            // break;
             default:
                 if (!['Control', 'Shift', 'Alt'].includes(event.key) && !event.ctrlKey) {
-                    const firstCoord = this._coords.getFirstCoord();
-                    cell = this._getCellByCoord(firstCoord[0], firstCoord[1]);
+                    const firstCoord = this.#coords.getFirstCoord();
+                    cell = this.getCellByCoord(firstCoord[0], firstCoord[1]);
+
                     if (!cell.querySelector('span > input')) {
-                        this._editCell(cell);
+                        this.editCell(cell);
                     }
                 }
         }
@@ -278,51 +285,50 @@ export default class XCell {
     /**
      * @param {MouseEvent} event 
      */
-    _onMouseDown(event) {
-        this.isLeftButtonHolded = event.button === 0;
+    #onMouseDown(event) {
+        this.#isLeftButtonHolded = event.button === 0;
+        const { target } = event;
 
-        if (this.isLeftButtonHolded && !event.shiftKey) {
-            const target = event.target;
+        if (this.#isLeftButtonHolded && !event.shiftKey) {
             const cell = target.closest('tr > td.x-cell');
 
             if (cell) {
-                const row = parseInt(cell.dataset.row), 
-                    col = parseInt(cell.dataset.col);
+                const row = parseInt(cell.dataset.row, 10); 
+                const col = parseInt(cell.dataset.col, 10);
 
-                this._coords.setCoords([[row, col]]);
+                this.#coords.setCoords([[row, col]]);
 
-                this._markActiveCells();
+                this.#markActiveCells();
             }
-            
         }
     }
 
     /**
      * @param {MouseEvent} event 
      */
-    _onMouseUp(event) {
-        this.isLeftButtonHolded = !(event.button === 0);
+    #onMouseUp(event) {
+        this.#isLeftButtonHolded = !(event.button === 0);
     }
 
     /**
      * @param {MouseEvent} event 
      */
-    _onMouseOver(event) {
-        if (this.isLeftButtonHolded) {
-            const target = event.target;
+    #onMouseOver(event) {
+        const { target } = event;
+        if (this.#isLeftButtonHolded) {
             const cell = target.closest('tr > td.x-cell');
 
             if (cell) {
-                this._coords.addCoord(parseInt(cell.dataset.row), parseInt(cell.dataset.col));
-                const [ minRow, minColumn, maxRow, maxColumn ] = this._coords.getRect();
+                this.#coords.addCoord(parseInt(cell.dataset.row, 10), parseInt(cell.dataset.col, 10));
+                const [ minRow, minColumn, maxRow, maxColumn ] = this.#coords.getRect();
 
-                for (let iRow = minRow; iRow <= maxRow; iRow++) {
-                    for (let iColumn = minColumn; iColumn <= maxColumn; iColumn++) {
-                        this._coords.addCoord(iRow, iColumn);
+                for (let iRow = minRow; iRow <= maxRow; iRow += 1) {
+                    for (let iColumn = minColumn; iColumn <= maxColumn; iColumn += 1) {
+                        this.#coords.addCoord(iRow, iColumn);
                     }
                 }
 
-                this._markActiveCells();
+                this.#markActiveCells();
             }
         }
     }
@@ -330,9 +336,9 @@ export default class XCell {
     /**
      * @param {KeyboardEvent} event 
      */
-    _onMoving(event) {
-        let deltaX = 0,
-            deltaY = 0;
+    #onMoving(event) {
+        let deltaX = 0;
+        let deltaY = 0;
 
         switch (event.key) {
             case 'ArrowUp':
@@ -347,10 +353,11 @@ export default class XCell {
             case 'ArrowRight':
                 deltaX = 1;
             break;
+            default:
         }
 
-        const [ firstActiveCoord ] = this._coords.getCoords();
-        const cell = this._getCellByCoord(firstActiveCoord[0], firstActiveCoord[1]);
+        const [ firstActiveCoord ] = this.#coords.getCoords();
+        const cell = this.getCellByCoord(firstActiveCoord[0], firstActiveCoord[1]);
 
         if (cell.querySelector('input')) {
             return;
@@ -358,7 +365,7 @@ export default class XCell {
 
         if (cell && cell.querySelector('input')) {
             cell.querySelector('input').blur();
-            this.rootElement.querySelector('.x-table').focus();
+            this.#rootElement.querySelector('.x-table').focus();
         }
 
         firstActiveCoord[0] += deltaY;
@@ -367,36 +374,36 @@ export default class XCell {
             firstActiveCoord[0] = 0;
         }
 
-        if (firstActiveCoord[0] > this.data.length - 1) {
-            firstActiveCoord[0] = this.data.length - 1;
+        if (firstActiveCoord[0] > this.#data.length - 1) {
+            firstActiveCoord[0] = this.#data.length - 1;
         }
 
         if (firstActiveCoord[1] < 0) {
             firstActiveCoord[1] = 0;
         }
 
-        if (firstActiveCoord[1] > this.columns.length - 1) {
-            firstActiveCoord[1] = this.columns.length - 1;
+        if (firstActiveCoord[1] > this.#columns.length - 1) {
+            firstActiveCoord[1] = this.#columns.length - 1;
         }
 
-        this._coords.setCoords([firstActiveCoord]);
-        this._markActiveCells();
+        this.#coords.setCoords([firstActiveCoord]);
+        this.#markActiveCells();
     }
 
     /**
      * @param {ClipboardEvent} event 
      */
-    _onCopy(event) {
+    #onCopy(event) {
         event.preventDefault();
-        event.clipboardData.setData('text/plain', this._getValuesActiveCoordsForClipboard());
+        event.clipboardData.setData('text/plain', this.#getValuesActiveCoordsForClipboard());
     }
 
     /**
      * @param {ClipboardEvent} event 
      */
-    _onPaste(event) {
+    #onPaste(event) {
         event.preventDefault();
-        this._pasteFromClipboard(String(event.clipboardData.getData('text/plain')).trim());
+        this.#pasteFromClipboard(String(event.clipboardData.getData('text/plain')).trim());
     }
 
     /**
@@ -405,14 +412,14 @@ export default class XCell {
      * @param {Number} column 
      * @returns {?Element}
      */
-    _getCellByCoord(row, column) {
-        return this.rootElement.querySelector(`td.x-cell[data-row="${row}"][data-col="${column}"]`);
+    getCellByCoord(row, column) {
+        return this.#rootElement.querySelector(`td.x-cell[data-row="${row}"][data-col="${column}"]`);
     }
 
-    _getValuesActiveCoords() {
+    getValuesActiveCoords() {
         const result = [];
-        this._coords.getCoords().sort().forEach((coord) => {
-            result.push(this.data[coord[0]][coord[1]]);
+        this.#coords.getCoords().sort().forEach((coord) => {
+            result.push(this.#data[coord[0]][coord[1]]);
         });
 
         return result;
@@ -421,10 +428,10 @@ export default class XCell {
     /**
      * @returns {String}
      */
-    _getValuesActiveCoordsForClipboard() {
+    #getValuesActiveCoordsForClipboard() {
         const result = [];
-        const sortResult = this._coords.getCoords()
-            .sort((a, b) => parseInt(`${a[0]}${a[1]}`) - parseInt(`${b[0]}${b[1]}`));
+        const sortResult = this.#coords.getCoords()
+            .sort((a, b) => parseInt(`${a[0]}${a[1]}`, 10) - parseInt(`${b[0]}${b[1]}`, 10));
 
         let prevRow = null;
         sortResult
@@ -435,9 +442,9 @@ export default class XCell {
                     result.push(sym);
                 }
 
-                result.push(this.data[coord[0]][coord[1]]);
+                result.push(this.#data[coord[0]][coord[1]]);
 
-                prevRow = coord[0];
+                [ prevRow ] = coord;
             });
 
         return result.join('');
@@ -448,11 +455,11 @@ export default class XCell {
      * @param {Array} firstCoord 
      * @param {Array} lastCoord 
      */
-    _selectOnRange(firstCoord, lastCoord) {
-        const firstRow = firstCoord[0],
-            firstColumn = firstCoord[1],
-            lastRow = lastCoord[0],
-            lastColumn = lastCoord[1];
+    #selectOnRange(firstCoord, lastCoord) {
+        const firstRow = firstCoord[0];
+        const firstColumn = firstCoord[1];
+        const lastRow = lastCoord[0];
+        const lastColumn = lastCoord[1];
 
         const rowEdges = [firstRow, lastRow].sort((a, b) => a - b);
         const columnEdges = [firstColumn, lastColumn].sort((a, b) => a - b);
@@ -460,17 +467,17 @@ export default class XCell {
         const rows = [];
         const columns = [];
 
-        for (let iRow = rowEdges[0]; iRow <= rowEdges[1]; iRow++) {
+        for (let iRow = rowEdges[0]; iRow <= rowEdges[1]; iRow += 1) {
             rows.push(iRow);
         }
 
-        for (let iColumn = columnEdges[0]; iColumn <= columnEdges[1]; iColumn++) {
+        for (let iColumn = columnEdges[0]; iColumn <= columnEdges[1]; iColumn += 1) {
             columns.push(iColumn);
         }
 
-        for (let i = 0; i < rows.length; i++) {
-            for (let j = 0; j < columns.length; j++) {
-                this._coords.addCoord(rows[i], columns[j]);
+        for (let i = 0; i < rows.length; i += 1) {
+            for (let j = 0; j < columns.length; j += 1) {
+                this.#coords.addCoord(rows[i], columns[j]);
             }
         }
     }
@@ -478,9 +485,7 @@ export default class XCell {
     /**
      * @param {String} clipText 
      */
-    _pasteFromClipboard(clipText) {
-        const hasEditedCell = this.rootElement.querySelectorAll('td.x-cell input').length > 0;
-
+    #pasteFromClipboard(clipText) {
         let totalCountItems = 0;
         const res = clipText.split("\n")
             .map((row) => {
@@ -491,18 +496,18 @@ export default class XCell {
             });
 
         if (totalCountItems > 1) {
-            const sortedCoords = this._coords
+            const sortedCoords = this.#coords
                 .getCoords()
-                .sort((a, b) => parseInt(`${a[0]}${a[1]}`) - parseInt(`${b[0]}${b[1]}`));
+                .sort((a, b) => parseInt(`${a[0]}${a[1]}`, 10) - parseInt(`${b[0]}${b[1]}`, 10));
 
             const [firstRow, firstColumn] = sortedCoords.length > 0 ? sortedCoords[0] : [0, 0];
 
             let isChanged = false;
             res.forEach((rowClip, rowIndex) => {
                 rowClip.forEach((colClip, colIndex) => {
-                    const cell = this._getCellByCoord(firstRow + rowIndex, firstColumn + colIndex);
+                    const cell = this.getCellByCoord(firstRow + rowIndex, firstColumn + colIndex);
                     if (cell) {
-                        this.data[firstRow + rowIndex][firstColumn + colIndex] = colClip;
+                        this.#data[firstRow + rowIndex][firstColumn + colIndex] = colClip;
                         cell.querySelector('span').innerText = colClip;
                         isChanged = true;
                     }
@@ -510,27 +515,27 @@ export default class XCell {
             });
 
             if (isChanged) {
-                this._emitEvent();
+                this.emitEvent();
             }
         } else if (totalCountItems === 1) {
             let isChanged = false;
             const cellVal = res[0][0];
-            this._coords.getCoords().forEach(([row, column]) => {
-                const cell = this._getCellByCoord(row, column);
+            this.#coords.getCoords().forEach(([row, column]) => {
+                const cell = this.getCellByCoord(row, column);
                 if (cell) {
-                    this.data[row][column] = cellVal;
+                    this.#data[row][column] = cellVal;
                     cell.querySelector('span').innerText = cellVal;
                     isChanged = true;
                 }
             });
 
             if (isChanged) {
-                this._emitEvent();
+                this.emitEvent();
             }
         }
     }
 
-    _markActiveCells() {
+    #markActiveCells() {
         let timer;
         
         (() => {
@@ -539,9 +544,9 @@ export default class XCell {
             }
 
             timer = setTimeout(() => {
-                this.rootElement.querySelectorAll('td.x-cell.active').forEach((node) => { node.classList.remove('active') });
-                this._coords.getCoords().forEach((coord) => {
-                    const cell = this.rootElement.querySelector(`td.x-cell[data-row="${coord[0]}"][data-col="${coord[1]}"]`);
+                this.#rootElement.querySelectorAll('td.x-cell.active').forEach((node) => { node.classList.remove('active') });
+                this.#coords.getCoords().forEach((coord) => {
+                    const cell = this.#rootElement.querySelector(`td.x-cell[data-row="${coord[0]}"][data-col="${coord[1]}"]`);
                     if (cell) {
                         cell.classList.add('active');
                     }
@@ -550,7 +555,7 @@ export default class XCell {
         })();
     }
 
-    _emitEvent() {
+    #emitEvent() {
         let timer;
         
         (() => {
@@ -560,10 +565,10 @@ export default class XCell {
 
             timer = setTimeout(() => {
                 const event = new CustomEvent('changeData', {
-                    detail: { data: this.data }
+                    detail: { data: this.#data }
                 });
 
-                this.rootElement.dispatchEvent(event);
+                this.#rootElement.dispatchEvent(event);
             });
         })();
     }
