@@ -515,7 +515,7 @@ export default class XCell {
             });
 
             if (isChanged) {
-                this.emitEvent();
+                this.#emitEvent();
             }
         } else if (totalCountItems === 1) {
             let isChanged = false;
@@ -530,7 +530,7 @@ export default class XCell {
             });
 
             if (isChanged) {
-                this.emitEvent();
+                this.#emitEvent();
             }
         }
     }
