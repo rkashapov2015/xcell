@@ -276,7 +276,7 @@ export default class XCell {
                     cell = this.getCellByCoord(firstCoord[0], firstCoord[1]);
 
                     if (!cell.querySelector('span > input')) {
-                        this.editCell(cell);
+                        this.#editCell(cell);
                     }
                 }
         }
